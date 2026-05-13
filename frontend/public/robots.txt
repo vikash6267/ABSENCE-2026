@@ -1,4 +1,5 @@
 # robots.txt for ABSENCE Streetwear
+# https://www.wearabsence.com
 
 User-agent: *
 Allow: /
@@ -8,12 +9,48 @@ Disallow: /admin/
 Disallow: /profile/
 Disallow: /checkout/
 Disallow: /cart/
+Disallow: /orders/
+Disallow: /login
 
 # Disallow API endpoints
 Disallow: /api/
 
-# Sitemap location
-Sitemap: https://wearabsence.com/sitemap.xml
+# Allow important pages
+Allow: /shop
+Allow: /product/
+Allow: /contact
+Allow: /faq
+Allow: /shipping
+Allow: /returns
+Allow: /terms
+Allow: /privacy
 
-# Crawl delay (optional)
+# Sitemap location
+Sitemap: https://www.wearabsence.com/sitemap.xml
+
+# Crawl delay (optional, helps prevent server overload)
 Crawl-delay: 1
+
+# Google-specific
+User-agent: Googlebot
+Allow: /
+Disallow: /admin/
+Disallow: /profile/
+Disallow: /checkout/
+Disallow: /cart/
+
+# Bing-specific
+User-agent: Bingbot
+Allow: /
+Disallow: /admin/
+Disallow: /profile/
+
+# Block bad bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /

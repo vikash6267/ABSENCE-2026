@@ -61,6 +61,17 @@ export default function Footer() {
 
         <div className="border-t border-border mt-8 pt-8 text-center text-muted">
           <p>&copy; 2024 ABSENCE. All rights reserved.</p>
+          <p className="mt-2 text-sm">
+            Developed and maintained by{' '}
+            <a
+              href="https://mahitechnocrafts.in"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-text hover:text-accent transition"
+            >
+              mahitechnocrafts.in
+            </a>
+          </p>
         </div>
       </div>
     </footer>

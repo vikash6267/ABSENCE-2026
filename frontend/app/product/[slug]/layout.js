@@ -1,6 +1,7 @@
 export async function generateMetadata({ params }) {
   try {
-    // Fetch product data
+    const siteUrl = 'https://www.wearabsence.com';
+
     const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'https://absence-backend.up.railway.app';
     const res = await fetch(`${apiUrl}/api/products/slug/${params.slug}`, {
       cache: 'no-store',
@@ -14,37 +15,55 @@ export async function generateMetadata({ params }) {
     }
 
     const product = await res.json();
-    const productImage = product.images?.[0]?.url || product.variants?.[0]?.images?.[0]?.url || '/logo.png';
-    const productPrice = product.price ? `₹${product.price}` : '';
-    const comparePrice = product.comparePrice ? `₹${product.comparePrice}` : '';
-    
-    // Create description
-    let description = product.description || product.shortDescription || '';
+    const rawProductImage =
+      product.images?.[0]?.url || product.variants?.[0]?.images?.[0]?.url || '/android-chrome-512x512.png';
+    const productImage = rawProductImage?.startsWith('http') ? rawProductImage : `${siteUrl}${rawProductImage}`;
+    const productPrice = product.price ? `Rs. ${product.price}` : '';
+    const comparePrice = product.comparePrice ? `Rs. ${product.comparePrice}` : '';
+
+    let description = String(product.description || product.shortDescription || '')
+      .replace(/<[^>]+>/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
     if (description.length > 160) {
       description = description.substring(0, 157) + '...';
     }
+
     if (!description) {
-      description = `Shop ${product.name} at ABSENCE. ${productPrice}${comparePrice ? ` (was ${comparePrice})` : ''}. Premium streetwear with free shipping.`;
+      description = `Shop ${product.name} at ABSENCE. ${productPrice}${
+        comparePrice ? ` (was ${comparePrice})` : ''
+      }. Premium streetwear with free shipping.`;
     }
 
-    // Create title
-    const title = `${product.name} - ${productPrice} | ABSENCE`;
+    const title = `${product.name}${productPrice ? ` - ${productPrice}` : ''} | ABSENCE`;
+    const productUrl = `${siteUrl}/product/${params.slug}`;
+    const ogImageUrl = `${productUrl}/opengraph-image`;
 
     return {
       title,
       description,
       keywords: `${product.name}, ${product.category || 'streetwear'}, ${product.gender || 'unisex'}, ABSENCE, buy online, ${productPrice}`,
+      alternates: {
+        canonical: productUrl,
+      },
       openGraph: {
         title,
         description,
-        url: `https://www.wearabsence.com/product/${params.slug}`,
+        url: productUrl,
         siteName: 'ABSENCE',
         images: [
           {
-            url: productImage,
+            url: ogImageUrl,
             width: 1200,
             height: 630,
-            alt: product.name,
+            alt: `${product.name} by ABSENCE`,
+          },
+          {
+            url: productImage,
+            width: 1200,
+            height: 1200,
+            alt: `${product.name} product image`,
           },
         ],
         locale: 'en_IN',
@@ -54,7 +73,7 @@ export async function generateMetadata({ params }) {
         card: 'summary_large_image',
         title,
         description,
-        images: [productImage],
+        images: [ogImageUrl],
       },
       other: {
         'product:price:amount': product.price,
