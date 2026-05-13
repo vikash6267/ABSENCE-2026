@@ -82,6 +82,20 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Explicit slug route for better clarity
+router.get('/slug/:slug', async (req, res) => {
+  try {
+    const product = await Product.findOne({ slug: req.params.slug, isActive: true }).populate('reviews.user', 'name email');
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    res.json(product);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Generic slug/id route (keep for backward compatibility)
 router.get('/:slug', async (req, res) => {
   try {
     const product = await Product.findOne({ slug: req.params.slug, isActive: true }).populate('reviews.user', 'name email');
