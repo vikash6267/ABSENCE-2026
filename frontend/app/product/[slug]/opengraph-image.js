@@ -1,6 +1,8 @@
 import { ImageResponse } from 'next/og';
+import { getServerApiBase } from '@/lib/serverApiBase';
 
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 export const alt = 'Product Image';
 export const size = {
   width: 1200,
@@ -10,9 +12,8 @@ export const contentType = 'image/png';
 
 async function getProduct(slug) {
   try {
-    // Use full backend URL
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'https://absence-backend.up.railway.app';
-    const res = await fetch(`${apiUrl}/api/products/slug/${slug}`, {
+    const apiBase = getServerApiBase();
+    const res = await fetch(`${apiBase}/api/products/slug/${encodeURIComponent(slug)}`, {
       cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
@@ -33,7 +34,9 @@ async function getProduct(slug) {
 }
 
 export default async function Image({ params }) {
-  const product = await getProduct(params.slug);
+  const resolvedParams = await Promise.resolve(params);
+  const slug = resolvedParams?.slug;
+  const product = slug ? await getProduct(slug) : null;
 
   if (!product) {
     return new ImageResponse(
@@ -165,7 +168,7 @@ export default async function Image({ params }) {
                   color: '#D4AF37',
                 }}
               >
-                ₹{product.price}
+                Rs. {product.price}
               </div>
               {product.comparePrice && (
                 <div
@@ -175,7 +178,7 @@ export default async function Image({ params }) {
                     textDecoration: 'line-through',
                   }}
                 >
-                  ₹{product.comparePrice}
+                    Rs. {product.comparePrice}
                 </div>
               )}
             </div>
@@ -217,3 +220,4 @@ export default async function Image({ params }) {
     }
   );
 }
+

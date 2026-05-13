@@ -1,7 +1,9 @@
+import { getServerApiBase } from '@/lib/serverApiBase';
+
 export const revalidate = 3600;
 
 const BASE_URL = 'https://www.wearabsence.com';
-const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'https://absence-backend.up.railway.app';
+const API_URL = getServerApiBase();
 
 async function fetchAllProducts() {
   const limit = 100;

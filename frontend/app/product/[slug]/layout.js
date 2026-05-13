@@ -1,15 +1,29 @@
+import { getServerApiBase } from '@/lib/serverApiBase';
+
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata({ params }) {
   try {
+    const resolvedParams = await Promise.resolve(params);
+    const slug = resolvedParams?.slug;
+
+    if (!slug) {
+      return {
+        title: 'Product',
+        description: 'Shop premium streetwear at ABSENCE',
+      };
+    }
+
     const siteUrl = 'https://www.wearabsence.com';
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'https://absence-backend.up.railway.app';
-    const res = await fetch(`${apiUrl}/api/products/slug/${params.slug}`, {
+    const apiBase = getServerApiBase();
+    const res = await fetch(`${apiBase}/api/products/slug/${encodeURIComponent(slug)}`, {
       cache: 'no-store',
     });
 
     if (!res.ok) {
       return {
-        title: 'Product Not Found - ABSENCE',
+        title: slug.replace(/-/g, ' '),
         description: 'The product you are looking for could not be found.',
       };
     }
@@ -36,8 +50,8 @@ export async function generateMetadata({ params }) {
       }. Premium streetwear with free shipping.`;
     }
 
-    const title = `${product.name}${productPrice ? ` - ${productPrice}` : ''} | ABSENCE`;
-    const productUrl = `${siteUrl}/product/${params.slug}`;
+    const title = `${product.name}${productPrice ? ` - ${productPrice}` : ''}`;
+    const productUrl = `${siteUrl}/product/${slug}`;
     const ogImageUrl = `${productUrl}/opengraph-image`;
 
     return {
@@ -67,7 +81,7 @@ export async function generateMetadata({ params }) {
           },
         ],
         locale: 'en_IN',
-        type: 'product',
+        type: 'website',
       },
       twitter: {
         card: 'summary_large_image',
@@ -78,12 +92,14 @@ export async function generateMetadata({ params }) {
       other: {
         'product:price:amount': product.price,
         'product:price:currency': 'INR',
+        'og:type': 'product',
       },
     };
   } catch (error) {
     console.error('Error generating metadata:', error);
+    const fallbackSlug = (await Promise.resolve(params))?.slug;
     return {
-      title: 'ABSENCE - Premium Streetwear',
+      title: fallbackSlug ? fallbackSlug.replace(/-/g, ' ') : 'Product',
       description: 'Shop premium streetwear at ABSENCE',
     };
   }
