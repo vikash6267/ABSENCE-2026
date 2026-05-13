@@ -1,0 +1,19 @@
+﻿<svg width="900" height="520" viewBox="0 0 900 520" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="900" y2="520" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#111827"/>
+      <stop offset="1" stop-color="#C2410C"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="520" fill="url(#bg)"/>
+
+  <rect x="90" y="110" width="210" height="300" rx="22" fill="#FFFFFF" fill-opacity="0.1"/>
+  <rect x="340" y="90" width="210" height="320" rx="22" fill="#FFFFFF" fill-opacity="0.1"/>
+  <rect x="590" y="120" width="210" height="290" rx="22" fill="#FFFFFF" fill-opacity="0.1"/>
+
+  <path d="M145 200L195 170L230 205L268 182L308 212L301 245L272 234V355H195V234L166 245L145 200Z" fill="#FFF7ED" fill-opacity="0.95"/>
+  <path d="M395 195L445 165L480 200L518 177L558 207L551 240L522 229V360H445V229L416 240L395 195Z" fill="#FFEDD5" fill-opacity="0.95"/>
+  <path d="M645 205L695 175L730 210L768 187L808 217L801 250L772 239V350H695V239L666 250L645 205Z" fill="#FED7AA" fill-opacity="0.95"/>
+
+  <text x="90" y="70" fill="#FFF7ED" font-family="Arial, sans-serif" font-size="32" font-weight="700">MINIMAL SERIES</text>
+</svg>

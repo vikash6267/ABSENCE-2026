@@ -8,7 +8,7 @@ import { useAuthStore } from '@/lib/store';
 
 export default function OrdersPage() {
   const router = useRouter();
-  const { user, initAuth } = useAuthStore();
+  const { user, initAuth, authInitialized } = useAuthStore();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -17,6 +17,8 @@ export default function OrdersPage() {
   }, [initAuth]);
 
   useEffect(() => {
+    if (!authInitialized) return;
+
     if (!user) {
       setLoading(false);
       return;
@@ -29,7 +31,11 @@ export default function OrdersPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [user]);
+  }, [authInitialized, user]);
+
+  if (!authInitialized || loading) {
+    return <div className="px-4 py-16 text-center text-muted">Loading orders...</div>;
+  }
 
   if (!user) {
     return (
@@ -43,10 +49,6 @@ export default function OrdersPage() {
         </button>
       </div>
     );
-  }
-
-  if (loading) {
-    return <div className="px-4 py-16 text-center text-muted">Loading orders...</div>;
   }
 
   return (
@@ -73,6 +75,9 @@ export default function OrdersPage() {
                 <div className="text-right">
                   <p className="text-sm text-muted">Status</p>
                   <p className="font-semibold capitalize">{order.orderStatus}</p>
+                  {Number(order.walletUsed || 0) > 0 && (
+                    <p className="text-xs text-blue-600">Wallet Used: Rs. {Number(order.walletUsed || 0).toFixed(2)}</p>
+                  )}
                   <p className="mt-1 font-bold text-accent">Rs. {order.total}</p>
                 </div>
               </div>

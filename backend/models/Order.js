@@ -26,11 +26,29 @@ const orderSchema = new mongoose.Schema({
   subtotal: Number,
   discount: Number,
   shippingCost: Number,
+  walletUsed: { type: Number, default: 0 },
   total: Number,
   
   couponUsed: {
     code: String,
     discount: Number
+  },
+  
+  referralProducts: [{
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product'
+    },
+    referrer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    commissionAmount: Number
+  }],
+  referralCommission: {
+    totalAmount: { type: Number, default: 0 },
+    credited: { type: Boolean, default: false },
+    creditedAt: Date
   },
   
   paymentMethod: String,

@@ -11,7 +11,7 @@ const flow = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'];
 export default function OrderDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user, initAuth } = useAuthStore();
+  const { user, initAuth, authInitialized } = useAuthStore();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [downloadingInvoice, setDownloadingInvoice] = useState(false);
@@ -21,6 +21,8 @@ export default function OrderDetailPage() {
   }, [initAuth]);
 
   useEffect(() => {
+    if (!authInitialized) return;
+
     if (!user || !params?.id) {
       setLoading(false);
       return;
@@ -33,7 +35,11 @@ export default function OrderDetailPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [params?.id, user]);
+  }, [authInitialized, params?.id, user]);
+
+  if (!authInitialized || loading) {
+    return <div className="px-4 py-16 text-center text-muted">Loading order...</div>;
+  }
 
   if (!user) {
     return (
@@ -44,10 +50,6 @@ export default function OrderDetailPage() {
         </button>
       </div>
     );
-  }
-
-  if (loading) {
-    return <div className="px-4 py-16 text-center text-muted">Loading order...</div>;
   }
 
   if (!order) {
@@ -164,6 +166,12 @@ export default function OrderDetailPage() {
               <span className="text-muted">Shipping</span>
               <span>Rs. {order.shippingCost || 0}</span>
             </div>
+            {Number(order.walletUsed || 0) > 0 && (
+              <div className="mb-1 flex justify-between text-blue-600">
+                <span>Wallet Used</span>
+                <span>-Rs. {Number(order.walletUsed || 0).toFixed(2)}</span>
+              </div>
+            )}
             <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-bold">
               <span>Total</span>
               <span>Rs. {order.total}</span>

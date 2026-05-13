@@ -78,6 +78,7 @@ export default function AdminOrders() {
               <th className="whitespace-nowrap px-6 py-3 text-left text-sm font-semibold">Order #</th>
               <th className="whitespace-nowrap px-6 py-3 text-left text-sm font-semibold">Customer</th>
               <th className="whitespace-nowrap px-6 py-3 text-left text-sm font-semibold">Total</th>
+              <th className="whitespace-nowrap px-6 py-3 text-left text-sm font-semibold">Wallet</th>
               <th className="whitespace-nowrap px-6 py-3 text-left text-sm font-semibold">Payment</th>
               <th className="whitespace-nowrap px-6 py-3 text-left text-sm font-semibold">Status</th>
               <th className="whitespace-nowrap px-6 py-3 text-left text-sm font-semibold">Date</th>
@@ -90,6 +91,13 @@ export default function AdminOrders() {
                 <td className="whitespace-nowrap px-6 py-4 font-medium">{order.orderNumber}</td>
                 <td className="px-6 py-4">{order.user?.name}</td>
                 <td className="whitespace-nowrap px-6 py-4">Rs. {order.total}</td>
+                <td className="whitespace-nowrap px-6 py-4">
+                  {Number(order.walletUsed || 0) > 0 ? (
+                    <span className="text-blue-700 font-semibold">- Rs. {formatMoney(order.walletUsed)}</span>
+                  ) : (
+                    <span className="text-gray-400">-</span>
+                  )}
+                </td>
                 <td className="px-6 py-4">
                   <span
                     className={`inline-block whitespace-nowrap rounded-full px-3 py-1 text-xs ${
@@ -201,6 +209,12 @@ export default function AdminOrders() {
                     <span className="text-gray-600">Shipping</span>
                     <span>Rs. {formatMoney(selectedOrder.shippingCost)}</span>
                   </div>
+                  {Number(selectedOrder.walletUsed || 0) > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Wallet Used</span>
+                      <span className="font-semibold text-blue-700">- Rs. {formatMoney(selectedOrder.walletUsed)}</span>
+                    </div>
+                  )}
                   {selectedOrder.couponUsed?.code && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Coupon</span>

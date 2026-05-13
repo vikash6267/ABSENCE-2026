@@ -5,6 +5,7 @@ const Order = require('../models/Order');
 const Counter = require('../models/Counter');
 const PaymentLedger = require('../models/PaymentLedger');
 const PaymentIntent = require('../models/PaymentIntent');
+const Wallet = require('../models/Wallet');
 const User = require('../models/User');
 const { sendOrderMail } = require('../utils/orderEmail');
 const { protect, authorize } = require('../middleware/auth');
@@ -36,6 +37,12 @@ const getNextOrderNumber = async () => {
   return `MTC-${String(counter.seq).padStart(5, '0')}`;
 };
 
+const normalizeWalletAmount = (value) => {
+  const amount = Number(value || 0);
+  if (!Number.isFinite(amount) || amount < 0) return 0;
+  return Number(amount.toFixed(2));
+};
+
 router.post('/create-order', protect, async (req, res) => {
   try {
     const { amount, lead } = req.body;
@@ -57,6 +64,7 @@ router.post('/create-order', protect, async (req, res) => {
       subtotal: Number(lead?.subtotal || 0),
       discount: Number(lead?.discount || 0),
       shippingCost: Number(lead?.shippingCost || 0),
+      walletUsed: normalizeWalletAmount(lead?.walletUsed),
       total: Number(lead?.total || amount),
       couponUsed: lead?.couponUsed || null,
       status: 'clicked',
@@ -81,6 +89,94 @@ router.post('/create-order', protect, async (req, res) => {
       await paymentIntent.save();
       throw gatewayError;
     }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.post('/wallet-checkout', protect, async (req, res) => {
+  try {
+    const { orderData } = req.body;
+
+    if (!orderData || !Array.isArray(orderData.items) || orderData.items.length === 0) {
+      return res.status(400).json({ message: 'Order payload missing' });
+    }
+
+    const walletUsed = normalizeWalletAmount(orderData.walletUsed);
+    if (walletUsed <= 0) {
+      return res.status(400).json({ message: 'Wallet amount is required for wallet checkout' });
+    }
+
+    const subtotal = Number(orderData.subtotal || 0);
+    const discount = Number(orderData.discount || 0);
+    const shippingCost = Number(orderData.shippingCost || 0);
+    const expectedTotal = Number((subtotal + shippingCost - discount - walletUsed).toFixed(2));
+    if (expectedTotal !== 0 || Number(orderData.total || 0) !== 0) {
+      return res.status(400).json({ message: 'Wallet checkout is only allowed for zero-payable orders' });
+    }
+
+    let wallet = await Wallet.findOne({ user: req.user._id });
+    if (!wallet) {
+      wallet = await Wallet.create({ user: req.user._id });
+    }
+    if (wallet.balance < walletUsed) {
+      return res.status(400).json({ message: 'Insufficient wallet balance' });
+    }
+
+    const orderNumber = await getNextOrderNumber();
+    wallet = await wallet.deduct(walletUsed, `Wallet used in order ${orderNumber}`);
+
+    let order;
+    try {
+      order = await Order.create({
+        ...orderData,
+        walletUsed,
+        user: req.user._id,
+        orderNumber,
+        paymentMethod: 'wallet',
+        paymentStatus: 'paid',
+        orderStatus: 'confirmed',
+        statusHistory: [
+          { status: 'pending', note: 'Order created via wallet checkout' },
+          { status: 'confirmed', note: `Paid fully using wallet (Rs. ${walletUsed.toFixed(2)})` },
+        ],
+      });
+    } catch (orderError) {
+      await wallet.addCredit(walletUsed, `Wallet refund for failed order ${orderNumber}`);
+      throw orderError;
+    }
+
+    const txn = wallet.transactions[wallet.transactions.length - 1];
+    if (txn) {
+      txn.order = order._id;
+      await wallet.save();
+    }
+
+    if (order.referralProducts && order.referralProducts.length > 0) {
+      const { processReferralCommission } = require('../utils/referral');
+      await processReferralCommission(order);
+    }
+
+    try {
+      await sendOrderMail({ to: req.user.email, order, context: 'created' });
+    } catch (emailError) {
+      console.error('Wallet checkout order email failed:', emailError.message);
+    }
+
+    await PaymentLedger.create({
+      order: order._id,
+      user: req.user._id,
+      transactionType: 'payment',
+      amount: 0,
+      status: 'success',
+      paymentMethod: 'wallet',
+      metadata: {
+        walletUsed,
+        note: 'Fully paid by wallet',
+      },
+    });
+
+    res.json({ success: true, order });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -117,21 +213,72 @@ router.post('/verify', protect, async (req, res) => {
       return res.status(400).json({ message: 'Order payload missing' });
     }
 
+    const subtotal = Number(orderData.subtotal || 0);
+    const discount = Number(orderData.discount || 0);
+    const shippingCost = Number(orderData.shippingCost || 0);
+    const walletUsed = normalizeWalletAmount(orderData.walletUsed);
+    const expectedTotal = Number((subtotal + shippingCost - discount - walletUsed).toFixed(2));
+    const providedTotal = Number(orderData.total || 0);
+
+    if (Math.abs(expectedTotal - providedTotal) > 0.01) {
+      return res.status(400).json({ message: 'Order totals mismatch' });
+    }
+
+    let wallet = null;
+    if (walletUsed > 0) {
+      wallet = await Wallet.findOne({ user: req.user._id });
+      if (!wallet) {
+        wallet = await Wallet.create({ user: req.user._id });
+      }
+      if (wallet.balance < walletUsed) {
+        return res.status(400).json({ message: 'Insufficient wallet balance' });
+      }
+    }
+
     const orderNumber = await getNextOrderNumber();
-    const order = await Order.create({
-      ...orderData,
-      user: req.user._id,
-      orderNumber,
-      paymentStatus: 'paid',
-      orderStatus: 'confirmed',
-      razorpayOrderId: orderId,
-      razorpayPaymentId: paymentId,
-      razorpaySignature: signature,
-      statusHistory: [
-        { status: 'pending', note: 'Order created after successful payment' },
-        { status: 'confirmed', note: 'Payment verified and confirmed' },
-      ],
-    });
+    if (walletUsed > 0) {
+      wallet = await wallet.deduct(walletUsed, `Wallet used in order ${orderNumber}`);
+    }
+
+    let order;
+    try {
+      order = await Order.create({
+        ...orderData,
+        walletUsed,
+        user: req.user._id,
+        orderNumber,
+        paymentMethod: 'online',
+        paymentStatus: 'paid',
+        orderStatus: 'confirmed',
+        razorpayOrderId: orderId,
+        razorpayPaymentId: paymentId,
+        razorpaySignature: signature,
+        statusHistory: [
+          { status: 'pending', note: 'Order created after successful payment' },
+          { status: 'confirmed', note: 'Payment verified and confirmed' },
+          ...(walletUsed > 0 ? [{ status: 'confirmed', note: `Wallet used: Rs. ${walletUsed.toFixed(2)}` }] : []),
+        ],
+      });
+    } catch (orderError) {
+      if (walletUsed > 0 && wallet) {
+        await wallet.addCredit(walletUsed, `Wallet refund for failed order ${orderNumber}`);
+      }
+      throw orderError;
+    }
+
+    if (walletUsed > 0 && wallet) {
+      const txn = wallet.transactions[wallet.transactions.length - 1];
+      if (txn) {
+        txn.order = order._id;
+        await wallet.save();
+      }
+    }
+
+    // Process referral commission for prepaid orders
+    if (order.referralProducts && order.referralProducts.length > 0) {
+      const { processReferralCommission } = require('../utils/referral');
+      await processReferralCommission(order);
+    }
 
     try {
       await sendOrderMail({ to: req.user.email, order, context: 'created' });

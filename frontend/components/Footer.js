@@ -27,25 +27,35 @@ export default function Footer() {
             <ul className="space-y-2 text-muted">
               <li><Link href="/contact" className="hover:text-text transition">Contact Us</Link></li>
               <li><Link href="/shipping" className="hover:text-text transition">Shipping Info</Link></li>
-              <li><Link href="/returns" className="hover:text-text transition">Returns</Link></li>
+              <li><Link href="/returns" className="hover:text-text transition">Exchange Policy</Link></li>
               <li><Link href="/faq" className="hover:text-text transition">FAQ</Link></li>
             </ul>
           </div>
 
           <div>
+            <h4 className="font-bold mb-4">Legal</h4>
+            <ul className="space-y-2 text-muted">
+              <li><Link href="/terms" className="hover:text-text transition">Terms & Conditions</Link></li>
+              <li><Link href="/privacy" className="hover:text-text transition">Privacy Policy</Link></li>
+            </ul>
+          </div>
+
+          <div>
             <h4 className="font-bold mb-4">Connect</h4>
-            <div className="flex space-x-4 mb-4">
-              <a href="#" className="w-10 h-10 bg-hover rounded-full flex items-center justify-center hover:bg-accent hover:text-bg transition">
+            <div className="mb-4">
+              <a 
+                href="https://www.instagram.com/wearabsence_/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full hover:from-purple-700 hover:to-pink-700 transition"
+                aria-label="Follow us on Instagram"
+              >
                 <Instagram size={20} />
-              </a>
-              <a href="#" className="w-10 h-10 bg-hover rounded-full flex items-center justify-center hover:bg-accent hover:text-bg transition">
-                <Facebook size={20} />
-              </a>
-              <a href="#" className="w-10 h-10 bg-hover rounded-full flex items-center justify-center hover:bg-accent hover:text-bg transition">
-                <Twitter size={20} />
+                <span className="font-semibold">Follow on Instagram</span>
               </a>
             </div>
-            <p className="text-sm text-muted">support@wearabsence.com</p>
+            <p className="text-sm text-muted">absence.clothiers@gmail.com</p>
+            <p className="text-xs text-muted mt-2">Follow us for latest drops & exclusive offers</p>
           </div>
         </div>
 

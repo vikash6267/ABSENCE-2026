@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { useAuthStore, useCartStore } from '@/lib/store';
 import toast from 'react-hot-toast';
-import { Check, ChevronLeft, ChevronRight, Shield, Star, Truck, Upload, X } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Shield, Star, Truck, Upload, X, Share2 } from 'lucide-react';
 
 const sizeOrder = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'];
 
@@ -71,6 +71,7 @@ export default function ProductPage() {
     comment: '',
     media: [],
   });
+  const [referralInfo, setReferralInfo] = useState(null);
 
   const addItem = useCartStore((state) => state.addItem);
   const user = useAuthStore((state) => state.user);
@@ -174,6 +175,29 @@ export default function ProductPage() {
         const availableSize = extractSizeOptions(fetchedProduct).find((size) => size.inStock);
         setSelectedSize(availableSize?.size || '');
 
+        // Check for referral code in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const refCode = urlParams.get('ref');
+        
+        if (refCode) {
+          try {
+            // Validate referral code and get referrer info
+            const refRes = await api.get(`/wallet/validate/${refCode}`);
+            if (refRes.data.valid) {
+              // Store referral info for this product only
+              const productReferralInfo = {
+                referrerId: refRes.data.referrerId,
+                referralCode: refRes.data.referralCode,
+                productId: fetchedProduct._id
+              };
+              setReferralInfo(productReferralInfo);
+              toast.success(`🎉 ${refRes.data.message}`, { duration: 4000 });
+            }
+          } catch (error) {
+            console.log('Invalid referral code');
+          }
+        }
+
         const primaryCategory = Array.isArray(fetchedProduct.category) ? fetchedProduct.category[0] : fetchedProduct.category;
         if (primaryCategory) {
           const relatedRes = await api.get(`/products?category=${encodeURIComponent(primaryCategory)}&limit=8&sort=-createdAt`);
@@ -236,8 +260,14 @@ export default function ProductPage() {
       return;
     }
 
-    addItem(product, selectedSize, quantity);
-    toast.success('Added to cart');
+    // Add item with referral info if available
+    addItem(product, selectedSize, quantity, referralInfo);
+    
+    if (referralInfo) {
+      toast.success('Added to cart with referral bonus! 🎉');
+    } else {
+      toast.success('Added to cart');
+    }
   };
 
   const handleReviewMediaChange = (event) => {
@@ -457,6 +487,65 @@ export default function ProductPage() {
             >
               {selectedSizeInfo?.inStock ? 'Add to Cart' : 'Out of Stock'}
             </button>
+
+            {/* Share & Earn Button */}
+            <button
+              onClick={async () => {
+                if (user) {
+                  try {
+                    // Get user's referral code
+                    const codeRes = await api.get('/wallet/referral-code');
+                    const referralCode = codeRes.data.referralCode;
+                    
+                    // Logged in user - share with referral code
+                    const referralLink = `${window.location.origin}/product/${product.slug}?ref=${referralCode}`;
+                    
+                    if (navigator.share) {
+                      navigator.share({
+                        title: product.name,
+                        text: `Check out ${product.name} on ABSENCE! Use my code ${referralCode} and I'll earn 5% commission 🎉`,
+                        url: referralLink
+                      }).catch(() => {
+                        navigator.clipboard.writeText(referralLink);
+                        toast.success('Referral link copied! Share to earn 5% commission');
+                      });
+                    } else {
+                      navigator.clipboard.writeText(referralLink);
+                      toast.success('Referral link copied! Share to earn 5% commission');
+                    }
+                  } catch (error) {
+                    toast.error('Failed to generate referral link');
+                  }
+                } else {
+                  // Not logged in - simple share
+                  const productLink = `${window.location.origin}/product/${product.slug}`;
+                  
+                  if (navigator.share) {
+                    navigator.share({
+                      title: product.name,
+                      text: `Check out ${product.name} on ABSENCE Streetwear!`,
+                      url: productLink
+                    }).catch(() => {
+                      navigator.clipboard.writeText(productLink);
+                      toast.success('Product link copied!');
+                    });
+                  } else {
+                    navigator.clipboard.writeText(productLink);
+                    toast.success('Product link copied!');
+                  }
+                }
+              }}
+              className="mt-3 w-full rounded-xl bg-gradient-to-r from-accent to-yellow-600 py-3.5 font-semibold text-white transition hover:scale-105 flex items-center justify-center gap-2"
+            >
+              <Share2 size={20} />
+              {user ? 'Share & Earn 5% Commission' : 'Share This Product'}
+            </button>
+
+            {user && (
+              <p className="text-center text-xs text-muted mt-2">
+                💰 Earn ₹{((product.price * 5) / 100).toFixed(0)} commission when someone buys through your link!
+              </p>
+            )}
 
             <div className="mt-5 grid grid-cols-1 gap-2 border-t border-border pt-4 text-sm md:grid-cols-3">
               <div className="flex items-center gap-3">

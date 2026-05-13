@@ -3,28 +3,38 @@ import { create } from 'zustand';
 export const useAuthStore = create((set) => ({
   user: null,
   token: null,
+  authInitialized: false,
   setAuth: (user, token) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
     }
-    set({ user, token });
+    set({ user, token, authInitialized: true });
   },
   logout: () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
     }
-    set({ user: null, token: null });
+    set({ user: null, token: null, authInitialized: true });
   },
   initAuth: () => {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
       const user = localStorage.getItem('user');
-      if (token && user) {
-        set({ token, user: JSON.parse(user) });
+      if (token && user && user !== 'undefined') {
+        try {
+          set({ token, user: JSON.parse(user), authInitialized: true });
+          return;
+        } catch (error) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
       }
+      set({ user: null, token: null, authInitialized: true });
+      return;
     }
+    set({ authInitialized: true });
   }
 }));
 
@@ -43,7 +53,7 @@ export const useCartStore = create((set, get) => ({
     }
   },
   
-  addItem: (product, size, quantity = 1) => {
+  addItem: (product, size, quantity = 1, referralInfo = null) => {
     const items = get().items;
     const existingIndex = items.findIndex(
       (item) => item.product._id === product._id && item.size === size
@@ -53,8 +63,14 @@ export const useCartStore = create((set, get) => ({
     if (existingIndex > -1) {
       newItems = [...items];
       newItems[existingIndex].quantity += quantity;
+      // Don't override existing referral info
     } else {
-      newItems = [...items, { product, size, quantity }];
+      newItems = [...items, { 
+        product, 
+        size, 
+        quantity,
+        referralInfo // Store referral info with this specific product
+      }];
     }
     
     if (typeof window !== 'undefined') {

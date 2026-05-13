@@ -9,9 +9,9 @@ export default function Home() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const heroBanners = {
-    main: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=1600&auto=format&fit=crop',
-    sideTop: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=900&auto=format&fit=crop',
-    sideBottom: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?q=80&w=900&auto=format&fit=crop',
+    main: '/hero-main.svg',
+    sideTop: '/hero-side-top.svg',
+    sideBottom: '/hero-side-bottom.svg',
   };
 
   useEffect(() => {
@@ -39,8 +39,7 @@ export default function Home() {
               Absence Streetwear for Everyday Flex
             </h1>
             <p className="mt-5 text-base text-muted md:text-lg">
-              Stylish oversized tees, minimal fits and daily wear essentials. Hero me banner blocks ready hain jahan
-              aap apni campaign images laga sakte ho.
+              Stylish oversized tees, minimal fits and daily wear essentials with a fresh custom hero visual.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link

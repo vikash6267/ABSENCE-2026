@@ -35,14 +35,30 @@ const userSchema = new mongoose.Schema({
     size: String,
     quantity: Number
   }],
+  referralCode: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 
+// Generate unique referral code before saving
 userSchema.pre('save', async function(next) {
+  if (!this.referralCode) {
+    this.referralCode = this.generateReferralCode();
+  }
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 12);
   next();
 });
+
+// Method to generate referral code
+userSchema.methods.generateReferralCode = function() {
+  const name = this.name.replace(/\s+/g, '').toUpperCase().substring(0, 4);
+  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `${name}${random}`;
+};
 
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);

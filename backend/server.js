@@ -29,6 +29,7 @@ app.use('/api/coupons', require('./routes/coupons'));
 app.use('/api/payments', require('./routes/payments'));
 app.use('/api/email', require('./routes/email'));
 app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/wallet', require('./routes/wallet'));
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)

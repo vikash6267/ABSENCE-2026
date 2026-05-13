@@ -35,6 +35,7 @@ const paymentIntentSchema = new mongoose.Schema(
     subtotal: Number,
     discount: Number,
     shippingCost: Number,
+    walletUsed: { type: Number, default: 0 },
     total: Number,
     couponUsed: {
       code: String,

@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ShoppingCart, User, Menu, X, Search, ChevronDown, LogOut, Settings } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, Search, ChevronDown, LogOut, Settings, Gift } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuthStore, useCartStore } from '@/lib/store';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [showReferralInfo, setShowReferralInfo] = useState(false);
   const { user, logout, initAuth } = useAuthStore();
   const { items, initCart } = useCartStore();
 
@@ -26,6 +27,34 @@ export default function Navbar() {
       ? 'bg-white/95 backdrop-blur-xl border-b border-border py-2 shadow-sm' 
       : 'bg-transparent py-4'
     }`}>
+      <div className="border-b border-border/70 bg-accent/10">
+        <button
+          onClick={() => setShowReferralInfo(true)}
+          className="group w-full overflow-hidden py-2.5 text-text hover:text-accent transition"
+          aria-label="Open referral earning information"
+        >
+          <motion.div
+            className="flex w-max items-center gap-8"
+            animate={{ x: ['0%', '-50%'] }}
+            transition={{ duration: 16, ease: 'linear', repeat: Infinity }}
+          >
+            {[...Array(2)].map((_, rowIndex) => (
+              <div key={rowIndex} className="flex items-center gap-8 pr-8">
+                {[...Array(6)].map((_, itemIndex) => (
+                  <span
+                    key={`${rowIndex}-${itemIndex}`}
+                    className="inline-flex items-center gap-2 whitespace-nowrap text-[11px] sm:text-xs font-bold uppercase tracking-[0.14em]"
+                  >
+                    <Gift size={13} className="opacity-90" />
+                    Share And Earn 5% Of Order Amount
+                  </span>
+                ))}
+              </div>
+            ))}
+          </motion.div>
+        </button>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-14">
           
@@ -146,6 +175,70 @@ export default function Navbar() {
                 </Link>
               )}
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showReferralInfo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[160] bg-black/60 p-4 flex items-center justify-center"
+          >
+            <motion.div
+              initial={{ y: 16, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 16, opacity: 0 }}
+              className="w-full max-w-xl rounded-2xl bg-white border border-border p-6"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">Referral Program</p>
+                  <h3 className="mt-1 text-xl font-black text-text">Share Product Link, Earn 5%</h3>
+                </div>
+                <button
+                  onClick={() => setShowReferralInfo(false)}
+                  className="p-2 rounded-lg hover:bg-hover text-muted hover:text-text transition"
+                  aria-label="Close referral information"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="mt-4 space-y-3 text-sm text-muted">
+                <p>
+                  Aap kisi product ka referral link share karte ho. Agar koi customer us link se order place karta hai,
+                  to order amount ka 5% aapke wallet me commission ke form me credit hota hai.
+                </p>
+                <div className="rounded-xl border border-border bg-card p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-text mb-2">Example</p>
+                  <p>
+                    Agar order amount `Rs. 2,000` hai, to aapko `5% = Rs. 100` milega.
+                  </p>
+                  <p className="mt-1">
+                    3 successful orders (2000, 1500, 3000) par total earning `Rs. 325` hogi.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 flex gap-3">
+                <Link
+                  href="/profile/wallet"
+                  onClick={() => setShowReferralInfo(false)}
+                  className="px-5 py-2.5 rounded-lg bg-accent text-bg font-bold text-sm hover:brightness-95 transition"
+                >
+                  Open Wallet
+                </Link>
+                <button
+                  onClick={() => setShowReferralInfo(false)}
+                  className="px-5 py-2.5 rounded-lg border border-border text-sm font-semibold text-text hover:bg-hover transition"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

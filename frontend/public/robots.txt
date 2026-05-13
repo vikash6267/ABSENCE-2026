@@ -1,0 +1,19 @@
+# robots.txt for ABSENCE Streetwear
+
+User-agent: *
+Allow: /
+
+# Disallow admin and user-specific pages
+Disallow: /admin/
+Disallow: /profile/
+Disallow: /checkout/
+Disallow: /cart/
+
+# Disallow API endpoints
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://wearabsence.com/sitemap.xml
+
+# Crawl delay (optional)
+Crawl-delay: 1

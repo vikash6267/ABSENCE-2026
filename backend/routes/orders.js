@@ -53,6 +53,7 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
+// Order number route MUST come before /:id route
 router.get('/number/:orderNumber', protect, async (req, res) => {
   try {
     const order = await Order.findOne({ orderNumber: req.params.orderNumber }).populate('user', 'name email');
@@ -71,9 +72,19 @@ router.get('/number/:orderNumber', protect, async (req, res) => {
   }
 });
 
+// This route handles both ObjectId and order numbers
 router.get('/:id', protect, async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id).populate('user', 'name email');
+    const { id } = req.params;
+    let order;
+
+    // Check if it's an order number (starts with MTC-)
+    if (id.startsWith('MTC-')) {
+      order = await Order.findOne({ orderNumber: id }).populate('user', 'name email');
+    } else {
+      // Try to find by ObjectId
+      order = await Order.findById(id).populate('user', 'name email');
+    }
     
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
@@ -91,9 +102,21 @@ router.get('/:id', protect, async (req, res) => {
 
 router.get('/invoice/:id', protect, async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id)
-      .populate('user', 'name email phone')
-      .populate('items.product', 'images variants');
+    const { id } = req.params;
+    let order;
+
+    // Check if it's an order number (starts with MTC-)
+    if (id.startsWith('MTC-')) {
+      order = await Order.findOne({ orderNumber: id })
+        .populate('user', 'name email phone')
+        .populate('items.product', 'images variants');
+    } else {
+      // Try to find by ObjectId
+      order = await Order.findById(id)
+        .populate('user', 'name email phone')
+        .populate('items.product', 'images variants');
+    }
+
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
@@ -170,7 +193,7 @@ router.get('/invoice/:id', protect, async (req, res) => {
 
       doc.fillColor('#111').font('Helvetica-Bold').fontSize(24).text('ABSENCE', margin + 90, y + 6);
       doc.fillColor('#555').font('Helvetica').fontSize(10).text('Streetwear Pvt. Ltd.', margin + 90, y + 34);
-      doc.text('support@wearabsence.com', margin + 90, y + 48);
+      doc.text('absence.clothiers@gmail.com', margin + 90, y + 48);
       doc.text('+91-99999-99999', margin + 90, y + 62);
 
       doc.fillColor('#111').font('Helvetica-Bold').fontSize(11).text('Tax Invoice', margin, y + 6, {
@@ -312,7 +335,16 @@ router.get('/invoice/:id', protect, async (req, res) => {
     doc.fillColor('#333').text('Shipping', labelX, y, { width: 120 });
     doc.text(`Rs. ${Number(order.shippingCost || 0).toFixed(2)}`, valueX, y, { width: 106, align: 'right' });
     y += 18;
+    if (Number(order.walletUsed || 0) > 0) {
+      doc.text('Wallet Used', labelX, y, { width: 120 });
+      doc.fillColor('#1d4ed8').text(`- Rs. ${Number(order.walletUsed || 0).toFixed(2)}`, valueX, y, {
+        width: 106,
+        align: 'right',
+      });
+      y += 18;
+    }
     if (order.couponUsed?.code) {
+      doc.fillColor('#333');
       doc.text('Coupon', labelX, y, { width: 120 });
       doc.text(`${order.couponUsed.code} (- Rs. ${Number(order.couponUsed.discount || 0).toFixed(2)})`, valueX - 20, y, {
         width: 126,
@@ -361,6 +393,13 @@ router.post('/', protect, async (req, res) => {
     };
     
     const order = await Order.create(orderData);
+    
+    // Process referral commission if products were referred
+    if (order.referralProducts && order.referralProducts.length > 0) {
+      const { processReferralCommission } = require('../utils/referral');
+      await processReferralCommission(order);
+    }
+    
     try {
       await sendOrderMail({ to: req.user.email, order, context: 'created' });
     } catch (emailError) {
@@ -393,9 +432,22 @@ router.put('/:id/status', protect, authorize('admin', 'superadmin'), async (req,
     
     if (status === 'delivered') {
       order.deliveredAt = new Date();
+      
+      // Credit referral commission for COD orders when delivered
+      if (order.paymentMethod === 'cod' && !order.referralCommission?.credited) {
+        const { creditReferralCommission } = require('../utils/referral');
+        await creditReferralCommission(order._id);
+      }
     } else if (status === 'cancelled') {
       order.cancelledAt = new Date();
       order.cancellationReason = note;
+      
+      // Cancel pending referral commissions
+      const Referral = require('../models/Referral');
+      await Referral.updateMany(
+        { order: order._id, status: 'pending' },
+        { status: 'cancelled' }
+      );
     }
     
     await order.save();
