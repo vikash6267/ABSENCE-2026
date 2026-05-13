@@ -10,12 +10,22 @@ export const contentType = 'image/png';
 
 async function getProduct(slug) {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-    const res = await fetch(`${apiUrl}/products/slug/${slug}`, {
+    // Use full backend URL
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'https://absence-backend.up.railway.app';
+    const res = await fetch(`${apiUrl}/api/products/slug/${slug}`, {
       cache: 'no-store',
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
-    if (!res.ok) return null;
-    return await res.json();
+    
+    if (!res.ok) {
+      console.error('Failed to fetch product:', res.status, res.statusText);
+      return null;
+    }
+    
+    const data = await res.json();
+    return data;
   } catch (error) {
     console.error('Error fetching product:', error);
     return null;
