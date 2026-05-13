@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
@@ -10,7 +10,7 @@ const categories = ['oversized', 'regular', 'printed', 'plain', 'graphic', 'mini
 const genders = ['men', 'women', 'unisex'];
 const fits = ['oversized', 'regular', 'slim', 'relaxed'];
 
-export default function Shop() {
+function ShopContent() {
   const searchParams = useSearchParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -293,5 +293,20 @@ export default function Shop() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Shop() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-accent border-r-transparent"></div>
+          <p className="mt-4 text-muted">Loading shop...</p>
+        </div>
+      </div>
+    }>
+      <ShopContent />
+    </Suspense>
   );
 }

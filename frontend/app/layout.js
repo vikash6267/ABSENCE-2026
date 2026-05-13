@@ -4,6 +4,7 @@ import AppShell from '@/components/AppShell'
 import CookieConsent from '@/components/CookieConsent'
 
 export const metadata = {
+  metadataBase: new URL('https://www.wearabsence.com'),
   title: 'ABSENCE - Premium Streetwear | Oversized T-Shirts & Streetwear Fashion',
   description: 'Shop premium streetwear at ABSENCE. Discover oversized t-shirts, graphic tees, and unique designs. Free shipping on orders above ₹999. 7-day easy returns.',
   keywords: 'streetwear, oversized t-shirts, graphic tees, premium clothing, fashion, ABSENCE, Indian streetwear',
@@ -11,7 +12,7 @@ export const metadata = {
   openGraph: {
     title: 'ABSENCE - Premium Streetwear',
     description: 'Premium streetwear for those who speak through silence',
-    url: 'https://wearabsence.com',
+    url: 'https://www.wearabsence.com',
     siteName: 'ABSENCE',
     images: [
       {
@@ -47,7 +48,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        <link rel="canonical" href="https://wearabsence.com" />
+        <link rel="canonical" href="https://www.wearabsence.com" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#000000" />
       </head>
